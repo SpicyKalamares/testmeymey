@@ -1,0 +1,47 @@
+# roles/nagios_install/tasks/main.yml
+---
+- name: Install required packages
+  ansible.builtin.yum:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - httpd
+    - php
+    - gcc
+    - glibc
+    - glibc-common
+    - gd
+    - gd-devel
+    - make
+    - net-snmp
+    - openssl-devel
+    - perl
+    - unzip
+
+- name: Download Nagios Core source
+  ansible.builtin.get_url:
+    url: "https://github.com/NagiosEnterprises/nagioscore/archive/nagios-4.4.6.tar.gz"
+    dest: "/tmp/nagioscore.tar.gz"
+
+- name: Extract Nagios Core source
+  ansible.builtin.unarchive:
+    src: "/tmp/nagioscore.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+
+- name: Compile and install Nagios Core
+  ansible.builtin.shell: |
+    cd /tmp/nagioscore-nagios-4.4.6
+    ./configure --with-command-group=nagcmd
+    make all
+    make install
+    make install-init
+    make install-config
+    make install-commandmode
+    make install-webconf
+
+- name: Enable and start Apache
+  ansible.builtin.service:
+    name: httpd
+    state: started
+    enabled: yes
